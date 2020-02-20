@@ -1,43 +1,36 @@
 server {
-	listen       80;
-	server_name  localhost;
+    listen 80;   #to listen on 80 in ipv4
+    listen 443 default ssl;
+    listen [::]:80 default_server; #to listen on 80 in ipv6
+    listen [::]:443 ssl;
 
-	root /var/www/42server/html;
-	index index.php index.html index.htm;
+    ssl on;
+    ssl_certificate      /etc/nginx/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key  /etc/nginx/ssl/private/nginx-selfsigned.key;
+    ssl_protocols        SSLv3 TLSv1;
+    ssl_ciphers          HIGH:!aNULL:!MD5;
 
-	location / {
-		autoindex on;
-		if ($request_uri ~ ^/(.*)\.html$) {
-			return 302 /$1;
-		}
-	}
+    error_page		497	https://$server_name:443$request_uri;   #redirect  when 400 code error
 
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root /var/www/42server/html;
-    }
-   location ~ \.php$ {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass   unix:/var/run/php/php7.3-fpm.sock;
-        fastcgi_index  index.php;
-        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include        fastcgi_params;
+    root /var/www/42server/html;
+    index index.php index.html index.htm;
+
+    server_name localhost;
+
+    location / {
+        autoindex on;
     }
 
-	location /phpmyadmin {
-		root /var/www/42server/html;
-		autoindex on;
-		index index.php index.html index.htm;
-		location ~ ^/phpmyadmin/(.+\.php)$ {
-			try_files $uri =404;
-			root /var/www/42server/html;
-			fastcgi_pass unix:/run/php/php7.3-fpm.sock;
- 			fastcgi_index index.php;
-			fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-			include /etc/nginx/fastcgi_params;
-		}
-		location ~* ^/phpmyadmin/(.+\.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt))$ {
-			root /var/www/42server/html;
-		}
-	}
+    location /wordpress {
+        alias  /var/www/42server/html/wordpress;
+    }
+
+    location  /phpmyadmin {
+        alias  /var/www/42server/html/phpmyadmin;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php7.3-fpm.sock;
+    }
 }
